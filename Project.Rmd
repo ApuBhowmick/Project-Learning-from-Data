@@ -1,0 +1,96 @@
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+data <- read.table("C:/Users/apubh/Downloads/preview data.txt", header = TRUE, sep = ";")
+data
+
+```
+
+```{r}
+group_number <- 4
+rows_to_remove <- c(group_number * 11, group_number^2, 2 * group_number + 21)
+data <- data[-rows_to_remove, ]
+rows_to_remove
+data
+
+```
+
+```{r}
+str(data)
+
+```
+
+```{r}
+summary(data)
+
+```
+
+```{r}
+ggplot(data, aes(x = Crop, y = Cstock, fill = Region)) + 
+  geom_boxplot() + 
+  labs(title = "Soil Organic Carbon Stock by Crop Type", y = "Carbon Stock (Mg C/ha)", x = "Crop Type")
+
+```
+
+```{r}
+ggplot(data, aes(x = Lutum, y = Cstock, color = Crop)) + 
+  geom_point(size = 3, alpha = 0.7) + 
+  labs(title = "Clay Content vs Carbon Stock", 
+       x = "Clay Content (%)", y = "Carbon Stock (Mg C/ha)") + 
+  theme_minimal()
+
+```
+
+```{r}
+model <- lm(Cstock ~ Crop + Lutum + Silt + Sand + pH, data = data)
+summary(model)
+
+```
+
+```{r}
+plot(model$residuals)  
+```
+
+```{r}
+soil_texture <- data %>% 
+select(Lutum, Silt, Sand)
+cor_matrix <- cor(soil_texture)
+print("Correlation Matrix:")
+print(cor_matrix)
+
+```
+
+```{r}
+library(corrplot)
+
+```
+
+```{r}
+
+corrplot(cor_matrix, method = "circle", type = "upper", tl.col = "black", tl.srt = 45)
+
+```
+
+```{r}
+library(car)
+model <- lm(Cstock ~ Lutum + Silt + Sand, data = data)
+vif(model)
+
+```
+```{r}
+ggplot(data, aes(x = Lutum, y = Cstock)) +
+  geom_point(color = "blue", size = 3) +              # Scatter points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Linear regression line with confidence interval
+  labs(title = "Carbon Stock vs Lutum (Clay Content)",
+       x = "Lutum (Clay Content %)",
+       y = "Carbon Stock (Mg C/ha)") +
+  theme_minimal()
+```
+```{r}
+confint(model)
+```

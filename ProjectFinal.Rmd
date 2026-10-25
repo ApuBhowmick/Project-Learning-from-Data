@@ -1,0 +1,338 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(corrplot)
+library(car)
+```
+
+```{r}
+data <- read.csv("D:/First Semester/Project Learning from Data/final data.txt", sep=";")
+
+head(data)
+print(data)
+```
+
+```{r}
+group_number <- 4
+rows_to_remove <- c(group_number * 11, group_number^2, 2 * group_number + 21)
+
+print(rows_to_remove)
+
+
+removed_rows <- data[-rows_to_remove, ]
+
+
+print(head(removed_rows))
+print(removed_rows)
+```
+
+```{r}
+summary(removed_rows)
+```
+
+```{r}
+na_positions <- is.na(removed_rows)
+
+# Print the row and column indices where NAs are present
+which(na_positions, arr.ind = TRUE)
+```
+
+
+```{r}
+sum(rowSums(is.na(removed_rows)) > 0)
+```
+
+
+```{r}
+data_clean <- na.omit(removed_rows)
+print(data_clean)
+```
+
+```{r}
+summary(data_clean)
+```
+
+```{r}
+na_positions <- is.na(data_clean)
+
+# Print the row and column indices where NAs are present
+which(na_positions, arr.ind = TRUE)
+```
+
+```{r}
+library(ggplot2)
+
+create_qq_plot <- function(var, var_name) {
+  ggplot(data_clean, aes(sample = var)) +
+    stat_qq(size = 1.5, color = "blue") +           # Larger points and color for visibility
+    stat_qq_line(color = "red", linewidth = 1) +    # Thicker reference line
+    ggtitle(paste("Q-Q Plot for", var_name)) +
+    theme_minimal(base_size = 14) +                 # Base font size for clarity
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 16),  # Center and bold title
+      axis.title = element_text(size = 14),
+      axis.text = element_text(size = 12)
+    ) +
+    labs(x = "Theoretical Quantiles", y = "Sample Quantiles")
+}
+
+# Create Q-Q plots for each independent variable
+create_qq_plot(data_clean$Lutum, "Lutum")
+create_qq_plot(data_clean$Silt, "Silt")
+create_qq_plot(data_clean$Sand, "Sand")
+create_qq_plot(data_clean$pH, "pH")
+
+```
+
+```{r}
+
+# Reshape data to long format
+data_long <- data_clean %>%
+  pivot_longer(cols = c(Lutum, Silt, Sand, pH), names_to = "Variable", values_to = "Value")
+
+# Create a boxplot for all variables
+ggplot(data_long, aes(x = Variable, y = Value, fill = Variable)) +
+  geom_boxplot(outlier.shape = 21, outlier.fill = "white", outlier.color = "black") +
+  ggtitle("Boxplots of Independent Variables") +
+  ylab("Values") +
+  xlab("Variables") +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    legend.position = "none"   # Remove legend as each boxplot is already labeled
+  ) +
+  scale_fill_brewer(palette = "Set3") +
+  scale_x_discrete(labels = c("Lutum", "Silt", "Sand", "pH"))  # Ensures readable labels
+
+
+```
+
+
+
+```{r}
+ggplot(data_clean, aes(sample = Cstock)) +
+  stat_qq(shape = 19, color = "blue") +
+  stat_qq_line(color = "red", size = 1) +
+  ggtitle("Q-Q Plot for Carbon Stock") +
+  xlab("Theoretical Quantiles") +
+  ylab("Sample Quantiles") +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
+  )
+```
+```{r}
+
+ggplot(data_clean, aes(y = Cstock)) +
+  geom_boxplot(fill = "lightgreen", color = "black", outlier.shape = 21, outlier.fill = "white", outlier.color = "red", outlier.size = 2) +
+  labs(
+    title = "Boxplot of Carbon Stock (Cstock)",
+    y = "Cstock",
+    x = ""  # Adding an empty label for x-axis to give context
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+    axis.title.y = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
+```
+
+```{r}
+Q1 <- quantile(data_clean$Cstock, 0.25, na.rm = TRUE)
+Q3 <- quantile(data_clean$Cstock, 0.75, na.rm = TRUE)
+IQR_value <- Q3 - Q1
+
+# Calculate lower and upper bounds for outliers
+lower_bound <- Q1 - 1.5 * IQR_value
+upper_bound <- Q3 + 1.5 * IQR_value
+
+# Filter out outliers
+data_clean <- subset(data_clean, Cstock >= lower_bound & Cstock <= upper_bound)
+
+# Verify the data after outlier removal
+print(head(data_clean))
+print(data_clean)
+```
+
+```{r}
+ggplot(data_clean, aes(sample = Cstock)) +
+  stat_qq(shape = 19, color = "blue") +
+  stat_qq_line(color = "red", size = 1) +
+  ggtitle("Q-Q Plot for Carbon Stock") +
+  xlab("Theoretical Quantiles") +
+  ylab("Sample Quantiles") +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
+  )
+```
+
+```{r}
+
+ggplot(data_clean, aes(y = Cstock)) +
+  geom_boxplot(fill = "lightgreen", color = "black", outlier.shape = 21, outlier.fill = "white", outlier.color = "red", outlier.size = 2) +
+  labs(
+    title = "Boxplot of Carbon Stock (Cstock)",
+    y = "Cstock",
+    x = ""  # Adding an empty label for x-axis to give context
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+    axis.title.y = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
+```
+
+```{r}
+ggplot(data_clean, aes(x = Cstock)) +
+  geom_histogram(aes(y = ..density..), bins = 30, color = "black", fill = "lightgreen", alpha = 0.6) +
+  geom_density(color = "darkgreen", size = 1) +  # Adding a density curve
+  labs(
+    title = "Histogram of Carbon Stock (Cstock)",
+    x = "Cstock",
+    y = "Density"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
+```
+
+```{r}
+summary(data_clean)
+sd(data_clean$Lutum)
+sd(data_clean$Sand)
+sd(data_clean$Silt)
+sd(data_clean$pH)
+```
+```{r}
+
+# Compute the correlation matrix
+cor_matrix <- cor(data_clean[, c("Lutum", "Silt", "Sand", "pH", "C", "Cstock")], use = "complete.obs")
+
+corrplot(
+  cor_matrix, 
+  method = "circle",        
+  type = "upper",           
+  order = "hclust",         
+  addCoef.col = "black",    
+  tl.col = "black",         
+  tl.srt = 45,              
+  col = colorRampPalette(c("red", "white", "blue"))(200), 
+  title = "Correlation Matrix of Variables", 
+  mar = c(0, 0, 2, 0)      
+)
+
+```
+```{r}
+#We can see that Sand has negative correlation with other variables
+model <- lm(Cstock ~ Crop + Lutum + Sand + Silt + pH, data = data_clean)
+summary(model)
+```
+
+```{r}
+plot(model$fitted.values, resid(model), 
+     xlab = "Fitted Values", 
+     ylab = "Residuals", 
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "red")
+
+# Q-Q Plot for Checking Normality
+qqnorm(resid(model))
+qqline(resid(model), col = "red")
+```
+
+```{r}
+#Remove Sand for multicolinearity 
+model2 <- lm(Cstock ~ Crop + Lutum + Silt + pH + Years, data = data_clean)
+summary(model2)
+```
+
+```{r}
+confint(model2)
+```
+
+
+```{r}
+plot(model2$fitted.values, resid(model), 
+     xlab = "Fitted Values", 
+     ylab = "Residuals", 
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "red")
+
+# Q-Q Plot for Checking Normality
+qqnorm(resid(model2))
+qqline(resid(model2), col = "red")
+```
+
+```{r}
+#We remove crop type to check is there any effect on CStock
+model3 = lm(Cstock ~ Lutum + Silt + pH, data = data_clean)
+summary(model3)
+```
+```{r}
+plot(model3$fitted.values, resid(model), 
+     xlab = "Fitted Values", 
+     ylab = "Residuals", 
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "red")
+
+# Q-Q Plot for Checking Normality
+qqnorm(resid(model3))
+qqline(resid(model3), col = "red")
+```
+
+
+```{r}
+par(mfrow = c(2,2))
+plot(model)
+plot(model2)
+plot(model3)
+```
+
+```{r}
+vif(model)
+```
+
+```{r}
+vif(model2)
+```
+
+```{r}
+vif(model3)
+```
+
+```{r}
+#There is no interaction effect of Crop and Region Two-Way ANOVA Non-Additive model
+anova_model <- aov(Cstock ~ Crop * Region, data = data_clean)
+summary(anova_model)
+```
+
+```{r}
+TukeyHSD(anova_model)
+```
+
+```{r}
+#Two-Way ANOVA Additive model
+anova_model2 <- aov(Cstock ~ Crop + Region, data = data_clean)
+summary(anova_model2)
+```
+```{r}
+#There are some effect of Crop type and Region on Cstock
+plot(anova_model2)
+```
+
+
+
+
